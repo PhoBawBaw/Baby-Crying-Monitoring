@@ -2,6 +2,9 @@
 #include <memory>
 #include <string>
 #include <fstream>
+#include <chrono>
+#include <thread>
+
 #include <grpcpp/grpcpp.h>
 #include <opencv2/opencv.hpp>  // OpenCV 라이브러리를 사용하여 비디오 프레임을 캡처합니다.
 
@@ -29,14 +32,17 @@ class GreeterClient {
     std::shared_ptr<ClientReaderWriter<HelloRequest, HelloReply>> stream(
         stub_->StreamVideo(&context));
 
-    // 라즈베리파이 카메라에서 비디오 스트림을 캡처합니다.
-    cv::VideoCapture cap(0);  // 0은 기본 카메라 장치를 의미합니다.
+    // 비디오 파일에서 프레임을 캡처합니다.
+    cv::VideoCapture cap("video.mp4");  // 비디오 파일 경로를 사용합니다.
     if (!cap.isOpened()) {
-      std::cerr << "Failed to open camera" << std::endl;
+      std::cerr << "Failed to open video file" << std::endl;
       return;
     }
 
     cv::Mat frame;
+    const int fps = 30;  // 원하는 FPS 설정
+    const int frame_duration_ms = 1000 / fps;  // 각 프레임 간의 지연 시간 (밀리초)
+
     while (cap.read(frame)) {
       std::vector<uchar> buf;
       cv::imencode(".jpg", frame, buf);  // 프레임을 JPEG로 인코딩합니다.
@@ -54,6 +60,9 @@ class GreeterClient {
       if (stream->Read(&reply)) {
         std::cout << "Server response: " << reply.message() << std::endl;
       }
+
+      // 30fps에 맞추기 위해 각 프레임 사이에 33ms 대기
+      std::this_thread::sleep_for(std::chrono::milliseconds(frame_duration_ms));
     }
 
     stream->WritesDone();
@@ -75,3 +84,4 @@ int main(int argc, char** argv) {
   greeter.StreamVideo(user);
   return 0;
 }
+
