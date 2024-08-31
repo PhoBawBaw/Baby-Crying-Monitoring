@@ -8,6 +8,8 @@ service Greeter {
 
 message HelloRequest {
   string name = 1;
+  float temperature = 2;
+  float humidity = 3;
 }
 
 message HelloReply {

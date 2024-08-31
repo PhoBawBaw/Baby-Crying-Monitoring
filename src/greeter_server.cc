@@ -24,13 +24,19 @@ using helloworld::Greeter;
 using helloworld::HelloReply;
 using helloworld::HelloRequest;
 
+using namespace std;
+
 ABSL_FLAG(uint16_t, port, 50051, "Server port for the service");
 
-// Logic and data behind the server's behavior.
 class GreeterServiceImpl final : public Greeter::Service {
   Status SayHello(ServerContext* context, const HelloRequest* request,
                   HelloReply* reply) override {
-    std::string prefix("Hello ");
+    cout << "Received request:" << endl;
+    cout << "Name: " << request->name() << endl;
+    cout << "Temperature: " << request->temperature() << " *C" << endl;
+    cout << "Humidity: " << request->humidity() << " %" << endl;
+
+    string prefix("Hello ");
     reply->set_message(prefix + request->name());
     return Status::OK;
   }
@@ -43,17 +49,12 @@ void RunServer(uint16_t port) {
   grpc::EnableDefaultHealthCheckService(true);
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
   ServerBuilder builder;
-  // Listen on the given address without any authentication mechanism.
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-  // Register "service" as the instance through which we'll communicate with
-  // clients. In this case it corresponds to an *synchronous* service.
-  builder.RegisterService(&service);
-  // Finally assemble the server.
-  std::unique_ptr<Server> server(builder.BuildAndStart());
-  std::cout << "Server listening on " << server_address << std::endl;
 
-  // Wait for the server to shutdown. Note that some other thread must be
-  // responsible for shutting down the server for this call to ever return.
+  builder.RegisterService(&service);
+  unique_ptr<Server> server(builder.BuildAndStart());
+  cout << "Server listening on " << server_address << endl;
+
   server->Wait();
 }
 
