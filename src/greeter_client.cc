@@ -5,9 +5,9 @@
 #include <chrono>
 #include <thread>
 #include <filesystem>
-
 #include <grpcpp/grpcpp.h>
 #include <opencv2/opencv.hpp>
+#include <future>
 
 #ifdef BAZEL_BUILD
 #include "examples/protos/helloworld.grpc.pb.h"
@@ -29,7 +29,7 @@ class GreeterClient {
   GreeterClient(std::shared_ptr<Channel> channel)
       : stub_(Greeter::NewStub(channel)) {}
 
-  void StreamVideo(const std::string& user) {
+  void StreamVideoAndAudio(const std::string& user) {
     std::string video_directory = "/home/jihyoung/record";
     std::string current_file;
 
@@ -44,7 +44,14 @@ class GreeterClient {
       if (latest_file != current_file) {
         current_file = latest_file;
         std::cout << "Streaming new file: " << current_file << std::endl;
-        StreamVideoFile(user, current_file);
+
+        // 비디오와 오디오를 병렬로 스트리밍
+        auto video_stream = std::async(std::launch::async, &GreeterClient::StreamVideoFile, this, user, current_file);
+        auto audio_stream = std::async(std::launch::async, &GreeterClient::StreamAudioFile, this, user, current_file);
+
+        // 두 작업이 모두 끝날 때까지 대기
+        video_stream.get();
+        audio_stream.get();
       }
 
       std::this_thread::sleep_for(std::chrono::seconds(1));  // Check for new files every second
@@ -84,16 +91,7 @@ class GreeterClient {
 
       HelloReply reply;
       if (stream->Read(&reply)) {
-        std::cout << "Server response: " << reply.message() << std::endl;
-      }
-
-      // Check for a new file to switch to while streaming
-      std::string latest_file = GetLatestFile("/home/jihyoung/record");
-      if (!latest_file.empty() && latest_file != video_file) {
-        std::cout << "Newer file detected. Switching to: " << latest_file << std::endl;
-        cap.release();  // Release the current file
-        stream->WritesDone();  // End the current stream properly
-        return;  // Exit the function to switch to the new file
+        std::cout << "Video Server response: " << reply.message() << std::endl;
       }
 
       std::this_thread::sleep_for(std::chrono::milliseconds(frame_duration_ms));
@@ -103,6 +101,46 @@ class GreeterClient {
     Status status = stream->Finish();
     if (!status.ok()) {
       std::cout << "StreamVideo RPC failed: " << status.error_message() << std::endl;
+    }
+  }
+
+  // Function to stream a single audio file
+  void StreamAudioFile(const std::string& user, const std::string& video_file) {
+    ClientContext context;
+    std::shared_ptr<ClientReaderWriter<HelloRequest, HelloReply>> stream(
+        stub_->StreamVideo(&context));
+
+    std::string audio_file = video_file.substr(0, video_file.find_last_of('.')) + ".aac";
+    std::ifstream audio_stream(audio_file, std::ios::binary);
+    if (!audio_stream.is_open()) {
+      std::cerr << "Failed to open audio file: " << audio_file << std::endl;
+      return;
+    }
+
+    const int audio_frame_size = 1024;  // 오디오 데이터를 읽어올 버퍼 크기
+    std::vector<char> audio_buffer(audio_frame_size);
+
+    while (audio_stream.read(audio_buffer.data(), audio_buffer.size())) {
+      HelloRequest request;
+      request.set_name(user);
+      request.set_audio_frame(std::string(audio_buffer.data(), audio_stream.gcount()));
+
+      if (!stream->Write(request)) {
+        break;  // Exit if the server closes the stream
+      }
+
+      HelloReply reply;
+      if (stream->Read(&reply)) {
+        std::cout << "Audio Server response: " << reply.message() << std::endl;
+      }
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(33));  // 약 30fps에 맞추어 전송
+    }
+
+    stream->WritesDone();
+    Status status = stream->Finish();
+    if (!status.ok()) {
+      std::cout << "StreamAudio RPC failed: " << status.error_message() << std::endl;
     }
   }
 
@@ -139,7 +177,6 @@ int main(int argc, char** argv) {
   GreeterClient greeter(
       grpc::CreateChannel(target_str, grpc::InsecureChannelCredentials()));
   std::string user("world");
-  greeter.StreamVideo(user);
+  greeter.StreamVideoAndAudio(user);
   return 0;
 }
-

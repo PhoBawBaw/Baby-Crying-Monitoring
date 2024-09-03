@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <fstream>
 #include <grpcpp/grpcpp.h>
 #include <opencv2/opencv.hpp>  // OpenCV 헤더 추가
 
@@ -27,7 +28,10 @@ class GreeterServiceImpl final : public Greeter::Service {
     HelloRequest request;
     int frame_count = 0;
 
-    while (stream->Read(&request)) {  // 클라이언트로부터 비디오 프레임을 읽음
+    std::ofstream audio_output("received_audio.aac", std::ios::binary); // 오디오 파일 저장
+
+    while (stream->Read(&request)) {  // 클라이언트로부터 비디오와 오디오 프레임을 읽음
+      // 비디오 데이터 처리
       if (!request.video_frame().empty()) {
         std::vector<uchar> buf(request.video_frame().begin(), request.video_frame().end());
         cv::Mat frame = cv::imdecode(buf, cv::IMREAD_COLOR);  // JPEG로 인코딩된 프레임을 디코딩합니다.
@@ -41,6 +45,12 @@ class GreeterServiceImpl final : public Greeter::Service {
         }
       }
 
+      // 오디오 데이터 처리
+      if (!request.audio_frame().empty()) {
+        audio_output.write(request.audio_frame().data(), request.audio_frame().size());
+        std::cout << "Received audio frame of size: " << request.audio_frame().size() << " bytes." << std::endl;
+      }
+
       HelloReply reply;
       reply.set_message("Frame " + std::to_string(frame_count) + " received");
       stream->Write(reply);  // 각 프레임 수신 후 클라이언트에 응답
@@ -48,6 +58,9 @@ class GreeterServiceImpl final : public Greeter::Service {
 
     cv::destroyAllWindows();  // 모든 OpenCV 윈도우를 닫습니다.
     std::cout << "Finished receiving video stream." << std::endl;
+
+    audio_output.close(); // 오디오 파일을 닫습니다.
+    std::cout << "Finished receiving audio stream and saved to received_audio.aac." << std::endl;
 
     return Status::OK;
   }
