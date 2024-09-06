@@ -10,6 +10,8 @@ service Greeter {
 message HelloRequest {
   string name = 1;
   bytes video_frame = 2;
+  bytes audio_frame = 3;
+
 }
 
 message HelloReply {

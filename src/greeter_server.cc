@@ -1,9 +1,9 @@
 #include <iostream>
-#include <fstream>
 #include <memory>
 #include <string>
-
+#include <fstream>
 #include <grpcpp/grpcpp.h>
+#include <opencv2/opencv.hpp>  // OpenCV 헤더 추가
 
 #ifdef BAZEL_BUILD
 #include "examples/protos/helloworld.grpc.pb.h"
@@ -28,14 +28,27 @@ class GreeterServiceImpl final : public Greeter::Service {
     HelloRequest request;
     int frame_count = 0;
 
-    std::ofstream file("received_video_stream.mp4", std::ios::binary); // 수신된 비디오 데이터를 저장할 파일
+    std::ofstream audio_output("received_audio.aac", std::ios::binary); // 오디오 파일 저장
 
-    while (stream->Read(&request)) {  // 클라이언트로부터 비디오 프레임을 읽음
+    while (stream->Read(&request)) {  // 클라이언트로부터 비디오와 오디오 프레임을 읽음
+      // 비디오 데이터 처리
       if (!request.video_frame().empty()) {
-        file.write(request.video_frame().data(), request.video_frame().size());
-        frame_count++;
-        std::cout << "Received frame " << frame_count
-                  << " of size: " << request.video_frame().size() << " bytes." << std::endl;
+        std::vector<uchar> buf(request.video_frame().begin(), request.video_frame().end());
+        cv::Mat frame = cv::imdecode(buf, cv::IMREAD_COLOR);  // JPEG로 인코딩된 프레임을 디코딩합니다.
+
+        if (!frame.empty()) {
+          cv::imshow("Received Video Stream", frame);  // 수신된 프레임을 화면에 표시합니다.
+          cv::waitKey(1);  // 키 입력 대기 없이 다음 프레임으로 넘어갑니다.
+          frame_count++;
+          std::cout << "Received frame " << frame_count
+                    << " of size: " << request.video_frame().size() << " bytes." << std::endl;
+        }
+      }
+
+      // 오디오 데이터 처리
+      if (!request.audio_frame().empty()) {
+        audio_output.write(request.audio_frame().data(), request.audio_frame().size());
+        std::cout << "Received audio frame of size: " << request.audio_frame().size() << " bytes." << std::endl;
       }
 
       HelloReply reply;
@@ -43,8 +56,11 @@ class GreeterServiceImpl final : public Greeter::Service {
       stream->Write(reply);  // 각 프레임 수신 후 클라이언트에 응답
     }
 
-    file.close();
+    cv::destroyAllWindows();  // 모든 OpenCV 윈도우를 닫습니다.
     std::cout << "Finished receiving video stream." << std::endl;
+
+    audio_output.close(); // 오디오 파일을 닫습니다.
+    std::cout << "Finished receiving audio stream and saved to received_audio.aac." << std::endl;
 
     return Status::OK;
   }
