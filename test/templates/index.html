@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Video and Audio Feed</title>
+    <style>
+        body {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: white;
+        }
+        h1 {
+            margin: 20px 0;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border: none;
+        }
+        audio {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live Video Feed</h1>
+    <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
+    
+    <h1>Live Audio Feed</h1>
+    <audio id="audio-feed" controls autoplay>
+        <source id="audio-source" src="{{ url_for('audio_feed') }}" type="audio/aac">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        // 비디오 스트림을 실시간으로 새로고침
+        const img = document.getElementById('video-feed');
+        img.onload = function() {
+            img.src = "{{ url_for('video_feed') }}?t=" + new Date().getTime();
+        }
+
+        // 오디오 스트림을 주기적으로 새로고침
+        const audioSource = document.getElementById('audio-source');
+        const audioFeed = document.getElementById('audio-feed');
+
+        function refreshAudio() {
+            // 오디오 소스를 새로고침하여 캐시된 파일이 아닌 최신 오디오를 로드
+            audioSource.src = "{{ url_for('audio_feed') }}?t=" + new Date().getTime();
+            audioFeed.load();  // 새 오디오 소스를 로드
+        }
+
+        // 5초마다 오디오 소스를 갱신하여 실시간 스트리밍처럼 보이게 함
+        setInterval(refreshAudio, 5000);
+    </script>
+</body>
+</html>
+
