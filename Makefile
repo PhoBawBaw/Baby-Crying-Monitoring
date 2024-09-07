@@ -3,7 +3,7 @@ PROTOBUF_UTF8_RANGE_LINK_LIBS = -lutf8_validity
 
 CXX = g++
 CPPFLAGS += `pkg-config --cflags protobuf grpc absl_flags absl_flags_parse opencv4`
-CXXFLAGS += -std=c++17
+CXXFLAGS += -std=c++17 -I./include 
 LDFLAGS += -L/usr/local/lib `pkg-config --libs --static protobuf grpc++ absl_flags absl_flags_parse $(PROTOBUF_ABSL_DEPS) opencv4`\
            $(PROTOBUF_UTF8_RANGE_LINK_LIBS) \
            -pthread\
