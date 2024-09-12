@@ -1,6 +1,6 @@
 #include <iostream>
-#include <memory>
-#include <string>
+#include <memory>   // std::unique_ptr 사용을 위한 헤더 추가
+#include <string>   // std::string 사용을 위한 헤더 추가
 #include <fstream>
 #include <chrono>
 #include <thread>
@@ -21,13 +21,15 @@ using grpc::Status;
 using grpc::ClientReaderWriter;
 using helloworld::Greeter;
 using helloworld::HelloReply;
-using helloworld::HelloRequest;
+using helloworld::VideoRequest;
+using helloworld::AudioRequest;
 namespace fs = std::filesystem;
 
 class GreeterClient {
  public:
   GreeterClient(std::shared_ptr<Channel> channel)
-      : stub_(Greeter::NewStub(channel)) {}
+      : video_stub_(Greeter::NewStub(channel)),
+        audio_stub_(Greeter::NewStub(channel)) {}
 
   void StreamVideoAndAudio(const std::string& user) {
     std::string video_directory = "/home/jihyoung/record";
@@ -59,13 +61,14 @@ class GreeterClient {
   }
 
  private:
-  std::unique_ptr<Greeter::Stub> stub_;
+  std::unique_ptr<Greeter::Stub> video_stub_;
+  std::unique_ptr<Greeter::Stub> audio_stub_;
 
   // Function to stream a single video file
   void StreamVideoFile(const std::string& user, const std::string& video_file) {
     ClientContext context;
-    std::shared_ptr<ClientReaderWriter<HelloRequest, HelloReply>> stream(
-        stub_->StreamVideo(&context));
+    std::shared_ptr<ClientReaderWriter<VideoRequest, HelloReply>> stream(
+        video_stub_->StreamVideo(&context));
 
     cv::VideoCapture cap(video_file);  // Open the specified video file
     if (!cap.isOpened()) {
@@ -81,7 +84,7 @@ class GreeterClient {
       std::vector<uchar> buf;
       cv::imencode(".jpg", frame, buf);
 
-      HelloRequest request;
+      VideoRequest request;
       request.set_name(user);
       request.set_video_frame(std::string(buf.begin(), buf.end()));
 
@@ -104,44 +107,47 @@ class GreeterClient {
     }
   }
 
-  // Function to stream a single audio file
   void StreamAudioFile(const std::string& user, const std::string& video_file) {
-    ClientContext context;
-    std::shared_ptr<ClientReaderWriter<HelloRequest, HelloReply>> stream(
-        stub_->StreamVideo(&context));
+      ClientContext context;
+      std::shared_ptr<ClientReaderWriter<AudioRequest, HelloReply>> stream(
+          audio_stub_->StreamAudio(&context));
 
-    std::string audio_file = video_file.substr(0, video_file.find_last_of('.')) + ".aac";
-    std::ifstream audio_stream(audio_file, std::ios::binary);
-    if (!audio_stream.is_open()) {
-      std::cerr << "Failed to open audio file: " << audio_file << std::endl;
-      return;
-    }
-
-    const int audio_frame_size = 1024;  // 오디오 데이터를 읽어올 버퍼 크기
-    std::vector<char> audio_buffer(audio_frame_size);
-
-    while (audio_stream.read(audio_buffer.data(), audio_buffer.size())) {
-      HelloRequest request;
-      request.set_name(user);
-      request.set_audio_frame(std::string(audio_buffer.data(), audio_stream.gcount()));
-
-      if (!stream->Write(request)) {
-        break;  // Exit if the server closes the stream
+      std::string audio_file = video_file.substr(0, video_file.find_last_of('.')) + ".aac";
+      std::ifstream audio_stream(audio_file, std::ios::binary);
+      if (!audio_stream.is_open()) {
+        std::cerr << "Failed to open audio file: " << audio_file << std::endl;
+        return;
       }
 
-      HelloReply reply;
-      if (stream->Read(&reply)) {
-        std::cout << "Audio Server response: " << reply.message() << std::endl;
+      const int audio_frame_size = 512;  // 오디오 데이터를 읽어올 버퍼 크기
+      std::vector<char> audio_buffer(audio_frame_size);
+
+      // 비디오와 동일한 속도로 오디오 프레임을 전송하도록 대기 시간 추가
+      const int fps = 30;
+      const int frame_duration_ms = 1000 / fps;
+
+      while (audio_stream.read(audio_buffer.data(), audio_buffer.size())) {
+        AudioRequest request;
+        request.set_name(user);
+        request.set_audio_frame(std::string(audio_buffer.data(), audio_stream.gcount()));
+
+        if (!stream->Write(request)) {
+          break;  // Exit if the server closes the stream
+        }
+
+        HelloReply reply;
+        if (stream->Read(&reply)) {
+          std::cout << "Audio Server response: " << reply.message() << std::endl;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(frame_duration_ms));  // 비디오와 동일한 주기로 오디오 전송
       }
 
-      std::this_thread::sleep_for(std::chrono::milliseconds(33));  // 약 30fps에 맞추어 전송
-    }
-
-    stream->WritesDone();
-    Status status = stream->Finish();
-    if (!status.ok()) {
-      std::cout << "StreamAudio RPC failed: " << status.error_message() << std::endl;
-    }
+      stream->WritesDone();
+      Status status = stream->Finish();
+      if (!status.ok()) {
+        std::cout << "StreamAudio RPC failed: " << status.error_message() << std::endl;
+      }
   }
 
   // Function to get the most recent file from a directory
@@ -180,3 +186,4 @@ int main(int argc, char** argv) {
   greeter.StreamVideoAndAudio(user);
   return 0;
 }
+
