@@ -4,6 +4,7 @@
 #include <grpcpp/grpcpp.h>
 #include <opencv2/opencv.hpp>
 #include <httplib.h>  // cpp-httplib 헤더 추가
+#include <thread>
 
 #ifdef BAZEL_BUILD
 #include "examples/protos/helloworld.grpc.pb.h"
@@ -18,19 +19,21 @@ using grpc::Status;
 using grpc::ServerReaderWriter;
 using helloworld::Greeter;
 using helloworld::HelloReply;
-using helloworld::HelloRequest;
+using helloworld::VideoRequest;
+using helloworld::AudioRequest;
 
 class GreeterServiceImpl final : public Greeter::Service {
 public:
+    // 비디오 스트림을 처리하는 메서드
     Status StreamVideo(ServerContext* context,
-                       ServerReaderWriter<HelloReply, HelloRequest>* stream) override {
-        HelloRequest request;
+                       ServerReaderWriter<HelloReply, VideoRequest>* stream) override {
+        VideoRequest request;
         int frame_count = 0;
 
         // HTTP 클라이언트를 설정합니다.
         httplib::Client cli("http://localhost:5000");  // Flask 서버 주소
 
-        while (stream->Read(&request)) {  // 클라이언트로부터 비디오와 오디오 프레임을 읽음
+        while (stream->Read(&request)) {  // 클라이언트로부터 비디오 프레임을 읽음
             // 비디오 데이터 처리 및 전송
             if (!request.video_frame().empty()) {
                 std::vector<uchar> buf(request.video_frame().begin(), request.video_frame().end());
@@ -55,6 +58,24 @@ public:
                 }
             }
 
+            HelloReply reply;
+            reply.set_message("Frame " + std::to_string(frame_count) + " received and sent");
+            stream->Write(reply);  // 각 프레임 수신 후 클라이언트에 응답
+        }
+
+        std::cout << "Finished receiving and sending video stream." << std::endl;
+        return Status::OK;
+    }
+
+    // 오디오 스트림을 처리하는 메서드
+    Status StreamAudio(ServerContext* context,
+                       ServerReaderWriter<HelloReply, AudioRequest>* stream) override {
+        AudioRequest request;
+
+        // HTTP 클라이언트를 설정합니다.
+        httplib::Client cli("http://localhost:5000");  // Flask 서버 주소
+
+        while (stream->Read(&request)) {  // 클라이언트로부터 오디오 프레임을 읽음
             // 오디오 데이터 처리 및 전송
             if (!request.audio_frame().empty()) {
                 std::string audio_data = request.audio_frame();
@@ -71,11 +92,11 @@ public:
             }
 
             HelloReply reply;
-            reply.set_message("Frame " + std::to_string(frame_count) + " received and sent");
-            stream->Write(reply);  // 각 프레임 수신 후 클라이언트에 응답
+            reply.set_message("Audio frame received and sent");
+            stream->Write(reply);  // 각 오디오 프레임 수신 후 클라이언트에 응답
         }
 
-        std::cout << "Finished receiving and sending video and audio stream." << std::endl;
+        std::cout << "Finished receiving and sending audio stream." << std::endl;
         return Status::OK;
     }
 };
