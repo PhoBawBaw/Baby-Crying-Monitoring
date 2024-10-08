@@ -9,9 +9,9 @@
 int data[5] = {0, 0, 0, 0, 0}; // 5바이트 데이터(온습도 + 체크섬)
 
 // PostgreSQL에 데이터를 삽입하는 함수
-void insertDataToDB(double temperature, double humidity) {
+void insertDataToDB(float temperature, float humidity) {
     // PostgreSQL 데이터베이스 연결 정보
-    const char* conninfo = "host=<ip address> port=15432 dbname=rpi user=test password=1234";
+    const char* conninfo = "host=<ip address> port=5432 dbname=db user=test password=1234";
     
     // PostgreSQL 연결 시도
     PGconn* conn = PQconnectdb(conninfo);
@@ -29,7 +29,7 @@ void insertDataToDB(double temperature, double humidity) {
     std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
 
     // 데이터베이스에 온도와 습도, 시간을 저장할 SQL 쿼리 작성
-    std::string query = "INSERT INTO zzanggu.environment (timestamp, temperature, humidity) VALUES ('" 
+    std::string query = "INSERT INTO public.environment (datetime, temperature, humidity) VALUES ('" 
                         + std::string(timeStr) + "', "
                         + std::to_string(temperature) + ", " 
                         + std::to_string(humidity) + ");";
@@ -117,7 +117,7 @@ int main() {
 
     while (1) {
         read_dht_data();
-        delay(2000); // 2초마다 데이터 읽기
+        delay(30000); // 30초마다 데이터 읽기
     }
 
     return 0;
