@@ -11,7 +11,7 @@ int data[5] = {0, 0, 0, 0, 0}; // 5바이트 데이터(온습도 + 체크섬)
 // PostgreSQL에 데이터를 삽입하는 함수
 void insertDataToDB(double temperature, double humidity) {
     // PostgreSQL 데이터베이스 연결 정보
-    const char* conninfo = "host=183.104.150.59 port=15432 dbname=rpi user=test password=1234";
+    const char* conninfo = "host=<ip address> port=15432 dbname=rpi user=test password=1234";
     
     // PostgreSQL 연결 시도
     PGconn* conn = PQconnectdb(conninfo);
