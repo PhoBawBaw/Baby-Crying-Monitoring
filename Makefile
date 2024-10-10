@@ -8,12 +8,12 @@ DHT_LIBS = -lwiringPi -lpq
 
 # 타겟 바이너리 파일 (bin 디렉터리에 바이너리 저장)
 BINDIR = $(HOME)/Baby-Crying-Monitoring/bin
-CLIENT_TARGET = $(BINDIR)/Client
+CLIENT_TARGET = $(BINDIR)/client
 DHT_TARGET = $(BINDIR)/dht22_reader
 
 # 소스 파일
 SRCDIR = $(HOME)/Baby-Crying-Monitoring/src
-CLIENT_SRC = $(SRCDIR)/Client.cc
+CLIENT_SRC = $(SRCDIR)/client.cc
 DHT_SRC = $(SRCDIR)/dht22_reader.cc
 
 # 기본 빌드 대상
