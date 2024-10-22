@@ -22,14 +22,14 @@
    git clone https://github.com/PhoBawBaw/Baby-Crying-Monitoring.git
    ```
 
-3. `scripts` 디렉토리로 이동합니다:
+3. `run` 디렉토리로 이동합니다:
    ```bash
-   cd Baby-Crying-Monitoring/scripts
+   cd Baby-Crying-Monitoring/run
    ```
 
 4. 클라이언트 코드를 컴파일합니다:
    ```bash
-   g++ -o client client.cc -pthread
+   g++ client.cc -o client -std=c++17 -lpthread
    ```
 
 5. 클라이언트를 실행합니다:
@@ -51,36 +51,36 @@
 
 3. 서버 코드를 백엔드 컨테이너로 복사합니다:
    ```bash
-   docker cp scripts/server.cc <백엔드 컨테이너>:/app
+   docker cp run/server.cc <백엔드 컨테이너>:/app
    docker cp src/predict.py <백엔드 컨테이너>:/app
    ```
-
-4. 백엔드 컨테이너에 접속합니다:
-   ```bash
-   sudo docker exec -it <백엔드 컨테이너> /bin/bash
-   ```
-
-5. `app` 디렉토리로 이동합니다:
-   ```bash
-   cd /app
-   ```
-
-6. 서버 코드를 컴파일합니다:
-   ```bash
-   g++ -o server server.cc -lstdc++fs
-   ```
-
-7. 서버를 실행합니다:
-   ```bash
-   ./server
-   ```
-
-### Notes
 
 - 백엔드 컨테이너 이름은 다음 명령어로 확인할 수 있습니다:
   ```bash
   docker ps | grep web_app_api
   ```
+
+5. 백엔드 컨테이너에 접속합니다:
+   ```bash
+   sudo docker exec -it <백엔드 컨테이너> /bin/bash
+   ```
+
+6. `app` 디렉토리로 이동합니다:
+   ```bash
+   cd /app
+   ```
+
+7. 서버 코드를 컴파일합니다:
+   ```bash
+   g++ server.cc -o server -std=c++17 -lpthread
+   ```
+
+8. 서버를 실행합니다:
+   ```bash
+   ./server
+   ```
+
+### Notes
 
 - 서버 주소와 포트 번호는 소스 코드에서 직접 수정해야 합니다.
 
