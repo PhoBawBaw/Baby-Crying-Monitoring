@@ -1,38 +1,43 @@
 import os
 import time
-import requests
+import aiohttp
+import asyncio
 
 
-def get_latest_file(directory):
+def get_latest_files(directory):
     files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(".wav")]
     if not files:
-        return None
-    latest_file = max(files, key=os.path.getctime)
-    return latest_file
+        return []
+    files.sort(key=os.path.getctime, reverse=True)
+    return files
 
 
-def upload_file_to_api(file_path):
+async def upload_file_to_api(file_path):
     url = "http://<ip address>:<port>/upload-wav/"
-    with open(file_path, "rb") as f:
-        files = {"file": f}
-        response = requests.post(url, files=files)
+    async with aiohttp.ClientSession() as session:
+        with open(file_path, "rb") as f:
+            form_data = aiohttp.FormData()
+            form_data.add_field("file", f, filename=os.path.basename(file_path), content_type="audio/wav")
 
-    if response.status_code == 200:
-        print(f"File {file_path} uploaded successfully. Response: {response.json()}")
-    else:
-        print(f"Failed to upload {file_path}. Response: {response.text}")
+            async with session.post(url, data=form_data) as response:
+                if response.status == 200:
+                    print(f"File {file_path} uploaded successfully. Response: {await response.json()}")
+                else:
+                    print(f"Failed to upload {file_path}. Response: {await response.text()}")
 
 
-def watch_directory_and_upload(directory, interval=10):
+async def watch_directory_and_upload(directory, interval=8):
     while True:
-        latest_file = get_latest_file(directory)
-        if latest_file:
-            upload_file_to_api(latest_file)
+        latest_files = get_latest_files(directory)
+        if len(latest_files) >= 2:
+            second_latest_file = latest_files[1]
+            await upload_file_to_api(second_latest_file)
         else:
-            print("No new files found.")
-        time.sleep(interval)
+            print("No enough files found.")
+        await asyncio.sleep(interval)
 
 
 if __name__ == "__main__":
     directory_to_watch = "/app/audio"
-    watch_directory_and_upload(directory_to_watch, interval=10)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(watch_directory_and_upload(directory_to_watch, interval=8))
