@@ -20,7 +20,7 @@ void run_ffmpeg() {
                 "-hls_playlist_type event "
                 "-fflags nobuffer+genpts "
                 "-tune zerolatency -preset ultrafast "
-		"-use_wallclock_as_timestamps 1 "
+		        "-use_wallclock_as_timestamps 1 "
                 "-muxdelay 0 "
                 "-f hls /baby/stream/stream.m3u8 "
                 "-f segment -segment_time 60 -reset_timestamps 1 "

@@ -12,7 +12,7 @@ RTSP_TARGET = $(BINDIR)/rtsp
 DHT_TARGET = $(BINDIR)/dht22_reader
 
 # 소스 파일
-SRCDIR = $(HOME)/Baby-Crying-Monitoring/src
+SRCDIR = $(HOME)/Baby-Crying-Monitoring/src/client
 RTSP_SRC = $(SRCDIR)/rtsp.cc
 DHT_SRC = $(SRCDIR)/dht22_reader.cc
 
