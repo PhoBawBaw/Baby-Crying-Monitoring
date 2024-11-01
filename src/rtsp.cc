@@ -67,6 +67,9 @@ int main(int argc, char *argv[]) {
     GstRTSPMediaFactory *factory = gst_rtsp_media_factory_new();
     gst_rtsp_media_factory_set_launch(factory, launch_pipeline.c_str());
 
+    // 미디어 팩토리 공유 설정 활성화
+    gst_rtsp_media_factory_set_shared(factory, TRUE);
+
     // 스트림을 /test 경로에 마운트
     gst_rtsp_mount_points_add_factory(mounts, "/test", factory);
     g_object_unref(mounts);
