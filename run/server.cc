@@ -16,11 +16,11 @@ void run_ffmpeg() {
                 "-vn -acodec pcm_s16le -ar 44100 -ac 2 -f segment -segment_time 5 -reset_timestamps 1 "
                 "-strftime 1 \"/baby/audio/audio_%Y-%m-%d_%H-%M-%S.wav\" "
                 "-c:v copy -c:a copy "
-                "-hls_time 1 -hls_list_size 1 "
-                "-hls_flags delete_segments "
+                "-hls_time 1 "
                 "-hls_playlist_type event "
                 "-fflags nobuffer+genpts "
-                "-use_wallclock_as_timestamps 1 "
+                "-tune zerolatency -preset ultrafast "
+		"-use_wallclock_as_timestamps 1 "
                 "-muxdelay 0 "
                 "-f hls /baby/stream/stream.m3u8 "
                 "-f segment -segment_time 60 -reset_timestamps 1 "
@@ -54,7 +54,7 @@ int main() {
 
     // 종료 신호 감지 및 프로그램 종료
     while (ffmpeg_running.load() && predict_running.load()) {
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(10)); // 10초
     }
 
     if (!ffmpeg_running.load()) {
