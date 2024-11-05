@@ -22,14 +22,14 @@
    git clone https://github.com/PhoBawBaw/Baby-Crying-Monitoring.git
    ```
 
-3. `run` 디렉토리로 이동합니다:
+3. `src/client` 디렉토리로 이동합니다:
    ```bash
-   cd Baby-Crying-Monitoring/run
+   cd Baby-Crying-Monitoring/src/client
    ```
 
 4. 클라이언트 코드를 컴파일합니다:
    ```bash
-   g++ client.cc -o client -std=c++17 -lpthread
+   g++ client_start.cc -o client -std=c++17 -lpthread
    ```
 
 5. 클라이언트를 실행합니다:
@@ -39,45 +39,29 @@
 
 #### 중앙 서버
 
-1. 홈 디렉토리로 이동합니다:
-   ```bash
-   cd ~/
-   ```
-
-2. 리포지토리를 클론합니다:
+1. 리포지토리를 클론합니다:
    ```bash
    git clone https://github.com/PhoBawBaw/Baby-Crying-Monitoring.git
    ```
 
-3. 서버 코드를 백엔드 컨테이너로 복사합니다:
+2. `src/server` 디렉토리로 이동합니다:
    ```bash
-   docker cp run/server.cc <백엔드 컨테이너>:/app
-   docker cp src/predict.py <백엔드 컨테이너>:/app
+   cd Baby-Crying-Monitoring/src/server
    ```
 
-- 백엔드 컨테이너 이름은 다음 명령어로 확인할 수 있습니다:
-  ```bash
-  docker ps | grep web_app_api
-  ```
-
-5. 백엔드 컨테이너에 접속합니다:
+3. 서버 코드를 컴파일합니다:
    ```bash
-   sudo docker exec -it <백엔드 컨테이너> /bin/bash
+   g++ server_start.cc -o server -std=c++17 -lpthread
    ```
 
-6. `app` 디렉토리로 이동합니다:
-   ```bash
-   cd /app
-   ```
-
-7. 서버 코드를 컴파일합니다:
-   ```bash
-   g++ server.cc -o server -std=c++17 -lpthread
-   ```
-
-8. 서버를 실행합니다:
+4. 서버를 실행합니다:
    ```bash
    ./server
+   ```
+
+5. 녹화 영상, 오디오 파일은 `/baby` 디렉토리에서 확인합니다:
+   ```bash
+   cd /baby
    ```
 
 ### Notes
@@ -87,6 +71,4 @@
 - 시스템을 빌드하기 전에 웹앱과 모델 컨테이너가 모두 작동 중인지 확인하세요.
 
 ## License
-TBD
-
----
+이 리포지토리는 AGPL-3.0 라이선스를 따릅니다.
