@@ -26,7 +26,7 @@ async def upload_file_to_api(file_path):
                     print(f"Failed to upload {file_path}. Response: {await response.text()}")
 
 
-async def watch_directory_and_upload(directory, interval=8):
+async def watch_directory_and_upload(directory, interval=5):
     while True:
         latest_files = get_latest_files(directory)
         if len(latest_files) >= 2:
@@ -40,4 +40,4 @@ async def watch_directory_and_upload(directory, interval=8):
 if __name__ == "__main__":
     directory_to_watch = "/app/audio"
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(watch_directory_and_upload(directory_to_watch, interval=8))
+    loop.run_until_complete(watch_directory_and_upload(directory_to_watch, interval=5))
