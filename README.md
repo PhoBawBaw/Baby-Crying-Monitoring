@@ -29,7 +29,7 @@
 
 4. 클라이언트 코드를 컴파일합니다:
    ```bash
-   g++ client_start.cc -o client -std=c++17 -lpthread
+   g++ client_start.cc -o client_start -std=c++17 -lpthread
    ```
 
 5. 클라이언트를 실행합니다:
@@ -58,7 +58,7 @@
 
 4. 서버 코드를 컴파일합니다:
    ```bash
-   g++ server_start.cc -o server -std=c++17 -lpthread
+   g++ server_start.cc -o server_start -std=c++17 -lpthread
    ```
 
 5. 서버를 실행합니다:
