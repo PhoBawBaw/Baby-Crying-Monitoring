@@ -9,6 +9,7 @@
 // 종료 플래그
 std::atomic<bool> ffmpeg_running(true);
 std::atomic<bool> predict_running(true);
+std::atomic<bool> moving_running(true);
 
 // ffmpeg 실행 함수
 void run_ffmpeg() {
@@ -31,9 +32,16 @@ void run_ffmpeg() {
 
 // predict.py 실행 함수
 void run_predict() {
-    std::system("python3 /baby/predict.py");
+    std::system("python3 predict.py");
     
     predict_running.store(false); // predict.py가 종료됨을 표시
+}
+
+// moving.py 실행 함수
+void run_moving() {
+    std::system("python3 moving.py");
+    
+    moving_running.store(false); // moving.py가 종료됨을 표시
 }
 
 int main() {
@@ -51,18 +59,25 @@ int main() {
     // 스레드 생성
     std::thread ffmpeg_thread(run_ffmpeg);
     std::thread predict_thread(run_predict);
+    std::thread moving_thread(run_moving);
 
     // 종료 신호 감지 및 프로그램 종료
-    while (ffmpeg_running.load() && predict_running.load()) {
-        std::this_thread::sleep_for(std::chrono::seconds(10)); // 10초
+    while (ffmpeg_running.load() && predict_running.load() && moving_running.load()) {
+        std::this_thread::sleep_for(std::chrono::seconds(5)); // 5초
     }
 
     if (!ffmpeg_running.load()) {
-        std::cout << "ffmpeg thread is terminating. Forcing predict.py to exit." << std::endl;
+        std::cout << "ffmpeg thread is terminating. Forcing predict.py and moving to exit." << std::endl;
         std::system("pkill -f predict.py"); // predict.py 프로세스 강제 종료
-    } else {
-        std::cout << "predict thread is terminating. Forcing ffmpeg to exit." << std::endl;
+        std::system("pkill -f moving"); // moving 프로세스 강제 종료
+    } else if (!predict_running.load()) {
+        std::cout << "predict thread is terminating. Forcing ffmpeg and moving to exit." << std::endl;
         std::system("pkill -f ffmpeg"); // ffmpeg 프로세스 강제 종료
+        std::system("pkill -f moving"); // moving 프로세스 강제 종료
+    } else if (!moving_running.load()) {
+        std::cout << "moving thread is terminating. Forcing ffmpeg and predict.py to exit." << std::endl;
+        std::system("pkill -f ffmpeg"); // ffmpeg 프로세스 강제 종료
+        std::system("pkill -f predict.py"); // predict.py 프로세스 강제 종료
     }
 
     // 모든 프로세스가 종료되면 프로그램 종료
@@ -71,6 +86,7 @@ int main() {
     // 스레드 조인
     ffmpeg_thread.join();
     predict_thread.join();
+    moving_thread.join();
 
     return 0;
 }
