@@ -101,7 +101,7 @@ def main():
     }
 
     # YOLO 모델 및 저조도 향상 모델 로드
-    yolo_model = YOLO('yolo11x.pt')
+    yolo_model = YOLO('yolo11n.pt')
     DCE_net = enhance_net_nopool(12)
     DCE_net.load_state_dict(torch.load('./dce.pth', map_location=torch.device('cpu')))
 
